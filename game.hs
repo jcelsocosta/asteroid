@@ -13,6 +13,8 @@ import Data.Time.LocalTime
 
 data GameAttribute =  Score  Int
 
+data NumMVar = Ponto {point :: MVar Int}
+
 numbers = 0
 width = 400
 height = 400
@@ -23,6 +25,7 @@ texbmp = [("tex.bmp",Nothing)]
 
 main :: IO ()
 main = do
+    
     let winConfig = ((100,80),(width,height),"Pong")
         bmpList = texbmp 
         gameMap = textureMap 0 30 30 w h
@@ -111,34 +114,20 @@ moveBarToDown _ _ = do
     then (setObjectPosition (pX,(pY-5)) obj)
     else (setObjectPosition (pX,(sY/2)) obj)
 
-oper :: (Int->Int->Int) -> MVar Int -> MVar Int -> Int -> IO () 
-oper op cont fim 0 
-  = do v <- takeMVar cont
-       putStrLn ("Contador: " ++ show v)
-       putMVar cont v
-       f <- takeMVar fim
-       putMVar fim (f-1)
-oper op cont fim num
-  = do v <- takeMVar cont
-       putMVar cont (op v 1)
-       oper op cont fim (num-1)
-
-waitThreads :: MVar Int -> IO ()
-waitThreads fim = 
-  do f <- takeMVar fim
-     if (f > 0) then
-         do putStrLn ("Fim: " ++ show f)
-            putMVar fim f
-            waitThreads fim
-       else 
-         return ()
+contar :: Int -> IO()
+contar op = do
+      f <- newMVar op
+      ff <- takeMVar f
+      putMVar f (ff+1)
+      u <- readMVar f
+      putStrLn (show u)
 
 gameCycle :: IOGame GameAttribute () () () ()
 gameCycle = do
   (Score n) <- getGameAttribute
-  contador <- liftIOtoIOGame $ newMVar 0 
+   
   
-
+  
   printOnScreen (show n) TimesRoman24 (0,0) 1.0 1.0 1.0
   
 
@@ -151,8 +140,7 @@ gameCycle = do
   
   col4 <- objectBottomMapCollision ball
   when col4  ( do
-    num <- liftIOtoIOGame $ takeMVar contador
-    contador <- liftIOtoIOGame $ putMVar contador (num+1)
+    liftIOtoIOGame $ contar n 
     setObjectPosition ((w/2),h-20)   ball
     setGameAttribute (Score (n+1))
      
@@ -183,23 +171,20 @@ gameCycle = do
               )
   col8 <- objectBottomMapCollision ball3
   when col8 (do
-      num <- liftIOtoIOGame $ takeMVar contador
-      contador <- liftIOtoIOGame $ putMVar contador (num+1)
+      liftIOtoIOGame $ contar n 
       setObjectPosition ((w/2)+50,h) ball3
       setGameAttribute (Score (n+1))
             )
 
   col10 <- objectBottomMapCollision ball4
   when col10 (do
-      num <- liftIOtoIOGame $ takeMVar contador
-      contador <- liftIOtoIOGame $ putMVar contador (num+1)
+      liftIOtoIOGame $ contar n 
       setObjectPosition (50,h-50) ball4
       setGameAttribute (Score (n+1))
               )
   col12 <- objectBottomMapCollision ball5
   when col12 (do
-      num <- liftIOtoIOGame $ takeMVar contador
-      contador <- liftIOtoIOGame $ putMVar contador (num+1)
+      liftIOtoIOGame $ contar n 
       setObjectPosition ((w/2)-50,h-50) ball5
       setGameAttribute (Score (n+1))
               )
